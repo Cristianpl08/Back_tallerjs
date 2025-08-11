@@ -10,6 +10,10 @@ const projectSchema = new mongoose.Schema({
   audio: {
     type: String,
     trim: true
+  },
+  audiofinal: {
+    type: String,
+    trim: true
   }
 }, {
   timestamps: true, // Agrega createdAt y updatedAt automáticamente
@@ -23,6 +27,7 @@ projectSchema.methods.toResponseDict = function() {
     _id: this._id.toString(),
     video: this.video,
     audio: this.audio,
+    audiofinal: this.audiofinal,
     created_at: this.createdAt ? this.createdAt.toISOString() : new Date().toISOString(),
     updated_at: this.updatedAt ? this.updatedAt.toISOString() : new Date().toISOString()
   };
@@ -59,6 +64,7 @@ projectSchema.pre('save', function(next) {
     _id: this._id,
     video: this.video,
     audio: this.audio,
+    audiofinal: this.audiofinal,
     isNew: this.isNew
   });
   next();
@@ -69,7 +75,8 @@ projectSchema.post('save', function(doc) {
   console.log('✅ Proyecto guardado exitosamente:', {
     _id: doc._id,
     video: doc.video,
-    audio: doc.audio
+    audio: doc.audio,
+    audiofinal: doc.audiofinal
   });
 });
 

@@ -109,10 +109,10 @@ async function getProject(req, res) {
  */
 async function createProject(req, res) {
   try {
-    const { video, audio } = req.body;
+    const { video, audio, audiofinal } = req.body;
     
     console.log('🎬 Creando nuevo proyecto');
-    console.log('📋 Datos recibidos:', { video, audio });
+    console.log('📋 Datos recibidos:', { video, audio, audiofinal });
 
     // Validar datos requeridos
     if (!video) {
@@ -125,7 +125,8 @@ async function createProject(req, res) {
     // Crear nuevo proyecto
     const project = new Project({
       video: video,
-      audio: audio
+      audio: audio,
+      audiofinal: audiofinal
     });
     
     console.log('💾 Guardando proyecto en la base de datos...');
@@ -133,7 +134,8 @@ async function createProject(req, res) {
     console.log('✅ Proyecto guardado exitosamente:', {
       _id: project._id.toString(),
       video: project.video,
-      audio: project.audio
+      audio: project.audio,
+      audiofinal: project.audiofinal
     });
 
     // Respuesta exitosa
@@ -163,10 +165,10 @@ async function createProject(req, res) {
 async function updateProject(req, res) {
   try {
     const { projectId } = req.params;
-    const { video, audio } = req.body;
+    const { video, audio, audiofinal } = req.body;
     
     console.log(`🎬 Actualizando proyecto con ID: ${projectId}`);
-    console.log('📋 Datos recibidos:', { video, audio });
+    console.log('📋 Datos recibidos:', { video, audio, audiofinal });
 
     // Validar datos requeridos
     if (!video) {
@@ -190,13 +192,15 @@ async function updateProject(req, res) {
     // Actualizar proyecto
     project.video = video;
     project.audio = audio;
+    project.audiofinal = audiofinal;
     
     console.log('💾 Guardando cambios en la base de datos...');
     await project.saveProject();
     console.log('✅ Proyecto actualizado exitosamente:', {
       _id: project._id.toString(),
       video: project.video,
-      audio: project.audio
+      audio: project.audio,
+      audiofinal: project.audiofinal
     });
 
     // Respuesta exitosa
