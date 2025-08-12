@@ -346,20 +346,27 @@ async function updateSegment(req, res) {
 
 /**
  * Actualizar/agregar campo de descriptions_prosody para un usuario en un segmento
+ * Permite guardar múltiples campos diferentes para el mismo usuario
  */
 async function updateDescriptionsProsody(req, res) {
   try {
     const { segmentId, userId, fieldName, fieldValue, timestamp } = req.body;
 
+    console.log(`📝 Actualizando descriptions_prosody para segmento: ${segmentId}, usuario: ${userId}, campo: ${fieldName}`);
+
+    // Validar campos requeridos
     if (!segmentId || !userId || !fieldName || !fieldValue || !timestamp) {
+      console.log('❌ Faltan campos requeridos:', { segmentId, userId, fieldName, fieldValue, timestamp });
       return res.status(400).json({
         success: false,
-        message: 'Faltan campos requeridos'
+        message: 'Faltan campos requeridos: segmentId, userId, fieldName, fieldValue, timestamp'
       });
     }
 
+    // Buscar el segmento
     const segment = await Segment.findById(segmentId);
     if (!segment) {
+      console.log(`❌ Segmento no encontrado: ${segmentId}`);
       return res.status(404).json({
         success: false,
         message: 'Segmento no encontrado'
@@ -372,38 +379,74 @@ async function updateDescriptionsProsody(req, res) {
     }
 
     // Buscar si el usuario ya tiene entrada en descriptions_prosody
-    let updated = false;
-    for (const entry of segment.descriptions_prosody) {
-      if (entry.user_id === userId) {
-        entry[fieldName] = fieldValue;
-        // Guardar timestamp por campo
-        if (!entry.timestamps) {
-          entry.timestamps = {};
-        }
-        entry.timestamps[fieldName] = timestamp;
-        updated = true;
+    let userEntry = null;
+    let userIndex = -1;
+    
+    for (let i = 0; i < segment.descriptions_prosody.length; i++) {
+      if (segment.descriptions_prosody[i].user_id === userId) {
+        userEntry = segment.descriptions_prosody[i];
+        userIndex = i;
         break;
       }
     }
     
-    if (!updated) {
-      // Crear nueva entrada para el usuario
+    if (userEntry) {
+      // Usuario ya existe, actualizar o agregar el campo
+      console.log(`✅ Usuario encontrado, actualizando campo: ${fieldName}`);
+      
+      // Actualizar el valor del campo
+      userEntry[fieldName] = fieldValue;
+      
+      // Inicializar timestamps si no existe
+      if (!userEntry.timestamps) {
+        userEntry.timestamps = {};
+      }
+      
+      // Actualizar timestamp del campo
+      userEntry.timestamps[fieldName] = timestamp;
+      
+      // Actualizar el entry en el array
+      segment.descriptions_prosody[userIndex] = userEntry;
+      
+      console.log(`📝 Campo '${fieldName}' actualizado para usuario ${userId}`);
+    } else {
+      // Usuario no existe, crear nueva entrada
+      console.log(`🆕 Usuario no encontrado, creando nueva entrada para: ${userId}`);
+      
       const newEntry = {
         user_id: userId,
         [fieldName]: fieldValue,
         timestamps: { [fieldName]: timestamp }
       };
+      
       segment.descriptions_prosody.push(newEntry);
+      console.log(`📝 Nueva entrada creada para usuario ${userId} con campo '${fieldName}'`);
     }
 
+    // Guardar cambios en la base de datos
+    console.log('💾 Guardando cambios en la base de datos...');
     await segment.saveSegment();
-    res.json({
+    
+    console.log(`✅ Segmento actualizado exitosamente. Total de entradas: ${segment.descriptions_prosody.length}`);
+    
+    // Respuesta exitosa
+    const response = {
       success: true,
-      message: 'Campo actualizado exitosamente',
-      data: { segment: segment.toResponseDict() }
-    });
+      message: `Campo '${fieldName}' ${userEntry ? 'actualizado' : 'agregado'} exitosamente`,
+      data: { 
+        segment: segment.toResponseDict(),
+        field_updated: fieldName,
+        user_id: userId,
+        total_entries: segment.descriptions_prosody.length
+      }
+    };
+
+    console.log('📤 Enviando respuesta exitosa:', response);
+    res.json(response);
+    
   } catch (error) {
     console.log('💥 Error en updateDescriptionsProsody:', error.message);
+    console.log('📋 Stack trace:', error.stack);
     res.status(500).json({
       success: false,
       message: 'Error al actualizar descriptions_prosody'
@@ -556,4 +599,4 @@ module.exports = {
   incrementViews,
   incrementLikes,
   updateDescriptionsProsody
-}; 
+};
